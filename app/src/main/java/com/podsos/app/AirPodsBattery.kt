@@ -1,9 +1,9 @@
-
 package com.podsos.app
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 
@@ -20,9 +20,6 @@ class AirPodsBattery(
     private var scanner: BluetoothLeScanner? = null
     private var scanning = false
     private var resultCount = 0
-    private var lastPacket = ""
-
-    private val seenDevices = mutableSetOf<String>()
 
     private val callback = object : ScanCallback() {
 
@@ -36,76 +33,55 @@ class AirPodsBattery(
 
             if (record == null) {
                 onStatusUpdate(
-                    "BLE callback received!\n" +
+                    "BLE RESULT RECEIVED\n" +
                     "No scan record\n" +
-                    "RSSI: ${result.rssi} dBm\n" +
-                    "Results: $resultCount"
+                    "RSSI: ${result.rssi}\n" +
+                    "Count: $resultCount"
                 )
                 return
             }
 
-            val deviceName = record.deviceName ?: "Unknown device"
+            val name = record.deviceName ?: "Unknown"
 
-            val manufacturerData =
-                record.getManufacturerSpecificData(0x004C)
+            val manufacturer = record.manufacturerSpecificData
+            val manufacturerInfo = StringBuilder()
 
-            if (manufacturerData != null && manufacturerData.isNotEmpty()) {
+            for (i in 0 until manufacturer.size()) {
+                val id = manufacturer.keyAt(i)
+                val bytes = manufacturer.valueAt(i)
 
-                val packet = manufacturerData.joinToString(" ") {
+                val hex = bytes.joinToString(" ") {
                     "%02X".format(it.toInt() and 0xFF)
                 }
 
-                if (packet != lastPacket) {
-                    lastPacket = packet
+                manufacturerInfo.append(
+                    "\nID: 0x%04X DATA: %s".format(id, hex)
+                )
+            }
 
-                    onStatusUpdate(
-                        "APPLE BLUETOOTH DATA\n" +
-                        "Device: $deviceName\n" +
-                        "RSSI: ${result.rssi} dBm\n" +
-                        "Data: $packet"
-                    )
+            val serviceData = StringBuilder()
+
+            record.serviceData?.forEach { (uuid, bytes) ->
+                val hex = bytes.joinToString(" ") {
+                    "%02X".format(it.toInt() and 0xFF)
                 }
 
-                return
+                serviceData.append("\n$uuid: $hex")
             }
 
-            val manufacturerIds = (0 until
-                record.manufacturerSpecificData.size()).map {
-                "0x%04X".format(
-                    record.manufacturerSpecificData.keyAt(it)
-                )
-            }
-
-            val services = record.serviceUuids?.joinToString {
-                it.toString()
-            } ?: "None"
-
-            val deviceKey = "$deviceName|$manufacturerIds|$services"
-
-            if (seenDevices.add(deviceKey)) {
-                onStatusUpdate(
-                    "BLE DEVICE DETECTED\n" +
-                    "Name: $deviceName\n" +
-                    "RSSI: ${result.rssi} dBm\n" +
-                    "Manufacturer: ${manufacturerIds.ifEmpty { listOf("None") }}\n" +
-                    "Services: $services\n" +
-                    "Total results: $resultCount"
-                )
-            }
-        }
-
-        override fun onBatchScanResults(results: MutableList<ScanResult>) {
             onStatusUpdate(
-                "BLE batch received: ${results.size} devices"
+                "BLE DEVICE DETECTED\n" +
+                "Name: $name\n" +
+                "RSSI: ${result.rssi} dBm\n" +
+                "Manufacturer: ${manufacturerInfo.ifEmpty { "None" }}\n" +
+                "Service data: ${serviceData.ifEmpty { "None" }}\n" +
+                "Results: $resultCount"
             )
         }
 
         override fun onScanFailed(errorCode: Int) {
             scanning = false
-
-            onStatusUpdate(
-                "BLUETOOTH SCAN FAILED\nError code: $errorCode"
-            )
+            onStatusUpdate("BLE SCAN FAILED: $errorCode")
         }
     }
 
@@ -113,13 +89,8 @@ class AirPodsBattery(
         try {
             val adapter = BluetoothAdapter.getDefaultAdapter()
 
-            if (adapter == null) {
-                onStatusUpdate("Bluetooth adapter unavailable")
-                return
-            }
-
-            if (!adapter.isEnabled) {
-                onStatusUpdate("Bluetooth is turned off")
+            if (adapter == null || !adapter.isEnabled) {
+                onStatusUpdate("Bluetooth unavailable or disabled")
                 return
             }
 
@@ -133,23 +104,25 @@ class AirPodsBattery(
             if (scanning) return
 
             resultCount = 0
-            lastPacket = ""
-            seenDevices.clear()
+
+            val filters = emptyList<ScanFilter>()
 
             val settings = ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                .setReportDelay(0)
                 .build()
 
-            scanner?.startScan(null, settings, callback)
+            scanner?.startScan(filters, settings, callback)
 
             scanning = true
 
             onStatusUpdate(
-                "BLE scanner started\nWaiting for advertisements..."
+                "BLE SCANNER ACTIVE\nWaiting for all advertisements..."
             )
 
         } catch (e: SecurityException) {
-            onStatusUpdate("Bluetooth scan permission denied")
+            onStatusUpdate("Bluetooth permission denied")
         } catch (e: Exception) {
             onStatusUpdate(
                 "Scanner error: ${e.javaClass.simpleName}: ${e.message}"
