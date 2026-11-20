@@ -23,9 +23,28 @@ import android.widget.*
 
 class MainActivity : Activity() {
 
-    private val bg = Color.rgb(12, 14, 20)
-    private val panel = Color.rgb(27, 30, 40)
-    private val muted = Color.rgb(155, 160, 177)
+    private val isDark: Boolean
+        get() = (resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    private val bg: Int
+        get() = if (isDark) Color.rgb(9, 7, 19) else Color.rgb(247, 243, 255)
+
+    private val panel: Int
+        get() = if (isDark) Color.rgb(27, 16, 42) else Color.WHITE
+
+    private val muted: Int
+        get() = if (isDark) Color.rgb(181, 160, 205) else Color.rgb(105, 83, 130)
+
+    private val accent = Color.rgb(168, 85, 247)
+    private val glow = Color.rgb(192, 132, 252)
+
+    private val primaryText: Int
+        get() = if (isDark) Color.WHITE else Color.rgb(32, 19, 48)
+
+    private val borderColor: Int
+        get() = if (isDark) Color.rgb(88, 52, 127) else Color.rgb(218, 197, 240)
 
     private lateinit var statusText: TextView
 
@@ -88,27 +107,138 @@ class MainActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
 
+        if (Build.VERSION.SDK_INT >= 23) {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                if (isDark) 0 else (
+                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
+                    View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                )
+        }
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(22, 28, 22, 24)
             setBackgroundColor(bg)
         }
 
-        val scroll = ScrollView(this)
-        scroll.addView(root)
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+        }
 
-        root.addView(text("PodsOS", 32, Color.WHITE, true))
-        root.addView(text("YOUR AUDIO. YOUR CONTROL.", 11, muted, true))
-        root.addView(space(26))
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(22, 22, 22, 24)
+        }
 
-        val device = card()
+        fun heading(value: String): TextView {
+            return text(value, 12, glow, true).apply {
+                letterSpacing = 0.12f
+            }
+        }
 
-        device.addView(text("YOUR DEVICE", 11, muted, true))
-        device.addView(space(10))
-        device.addView(text("AirPods 4 ANC", 23, Color.WHITE, true))
+        fun cyberCard(): LinearLayout {
+            return card().apply {
+                background = rounded(panel, 26).apply {
+                    setStroke(1, borderColor)
+                }
+            }
+        }
 
-        statusText = text("Checking Bluetooth...", 14, muted)
-        scanStatusText = text("Battery scanner waiting for permission...", 12, muted)
+        // HEADER
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        brand.addView(text("PodsOS", 32, primaryText, true))
+        brand.addView(
+            text("NEXT-GEN AUDIO INTERFACE", 10, muted, true)
+        )
+
+        header.addView(
+            brand,
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        val online = TextView(this).apply {
+            text = "  SYSTEM ONLINE  "
+            textSize = 10f
+            setTextColor(glow)
+            setPadding(12, 12, 12, 12)
+            background = rounded(
+                if (isDark) Color.rgb(48, 28, 68)
+                else Color.rgb(237, 222, 255), 30
+            )
+        }
+
+        header.addView(online)
+        content.addView(header)
+        content.addView(space(26))
+
+        // DEVICE PANEL
+        val device = cyberCard()
+
+        device.addView(heading("01 / DEVICE CONNECTION"))
+        device.addView(space(16))
+
+        device.addView(
+            text("AirPods 4 ANC", 25, primaryText, true)
+        )
+        device.addView(space(8))
+
+        statusText = text(
+            "Checking Bluetooth connection...",
+            14,
+            muted
+        )
+        device.addView(statusText)
+        device.addView(space(20))
+
+        val batteryTitle = text(
+            "BATTERY TELEMETRY",
+            11,
+            glow,
+            true
+        )
+        device.addView(batteryTitle)
+        device.addView(space(12))
+
+        val battery = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        battery.addView(
+            batteryItem("LEFT", "--"),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+        battery.addView(
+            batteryItem("RIGHT", "--"),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+        battery.addView(
+            batteryItem("CASE", "--"),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+
+        device.addView(battery)
+        device.addView(space(18))
+
+        scanStatusText = text(
+            "Battery scanner waiting for permission...",
+            11,
+            muted
+        )
+        device.addView(scanStatusText)
+
+        content.addView(device)
+        content.addView(space(18))
+
         batteryScanner = AirPodsBattery(
             onBatteryUpdate = { data ->
                 runOnUiThread {
@@ -122,122 +252,182 @@ class MainActivity : Activity() {
             }
         )
 
-        device.addView(statusText)
-        device.addView(space(18))
-
-        val battery = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-
-        battery.addView(
-            batteryItem("LEFT", "--"),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        battery.addView(
-            batteryItem("RIGHT", "--"),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        battery.addView(
-            batteryItem("CASE", "--"),
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        device.addView(battery)
-        device.addView(space(10))
-        device.addView(scanStatusText)
-        root.addView(device)
-
-        root.addView(space(12))
-
-        val refreshButton = Button(this).apply {
-            text = "Refresh Connection"
-            textSize = 14f
-            setTextColor(Color.WHITE)
-            background = rounded(panel, 18)
+        // CONNECTION REFRESH
+        val refresh = Button(this).apply {
+            text = "⟳   REFRESH CONNECTION"
+            textSize = 13f
             isAllCaps = false
-
+            setTextColor(Color.WHITE)
+            background = rounded(accent, 18)
             setOnClickListener {
                 checkBluetoothPermission()
             }
         }
 
-        root.addView(
-            refreshButton,
+        content.addView(
+            refresh,
             LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                52
+                -1, 54
             )
         )
+        content.addView(space(26))
 
-        root.addView(space(22))
-        root.addView(text("NOISE CONTROL", 13, muted, true))
-        root.addView(space(10))
+        // AUDIO ENVIRONMENT
+        content.addView(heading("02 / AUDIO ENVIRONMENT"))
+        content.addView(space(12))
 
-        listOf(
+        val audioPanel = cyberCard()
+        audioPanel.addView(
+            text("Noise Control", 20, primaryText, true)
+        )
+        audioPanel.addView(space(14))
+
+        val audioModes = listOf(
             "Noise Cancellation",
             "Transparency",
             "Adaptive Audio",
             "Off"
-        ).forEach { mode ->
+        )
 
-            val button = Button(this).apply {
+        audioModes.forEach { mode ->
+            val modeButton = Button(this).apply {
                 text = mode
-                textSize = 14f
-                setTextColor(Color.WHITE)
-                background = rounded(panel, 18)
+                textSize = 13f
                 isAllCaps = false
+                setTextColor(primaryText)
+                background = rounded(
+                    if (isDark) Color.rgb(53, 34, 72)
+                    else Color.rgb(241, 231, 255), 16
+                )
 
                 setOnClickListener {
                     Toast.makeText(
                         this@MainActivity,
-                        "ANC control is not available yet",
+                        "AirPods mode control is not available yet",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             }
 
-            root.addView(
-                button,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    58
-                ).apply {
+            audioPanel.addView(
+                modeButton,
+                LinearLayout.LayoutParams(-1, 52).apply {
                     bottomMargin = 8
                 }
             )
         }
 
-        root.addView(space(20))
-        root.addView(text("QUICK SETTINGS", 13, muted, true))
-        root.addView(space(10))
+        content.addView(audioPanel)
+        content.addView(space(26))
 
-        val settings = card()
+        // QUICK SETTINGS
+        content.addView(heading("03 / QUICK ACCESS"))
+        content.addView(space(12))
 
-        settings.addView(
-            text("AirPods Controls", 18, Color.WHITE, true)
+        val quick = cyberCard()
+        quick.addView(
+            text("AirPods Companion", 19, primaryText, true)
         )
-
-        settings.addView(space(8))
-
-        settings.addView(
+        quick.addView(space(8))
+        quick.addView(
             text(
-                "Battery monitoring, ear detection, gestures and advanced audio settings.",
-                14,
+                "Bluetooth monitoring, device information and future audio features.",
+                13,
                 muted
             )
         )
 
-        root.addView(settings)
-        root.addView(space(28))
+        content.addView(quick)
+        content.addView(space(26))
 
-        root.addView(
-            text("PodsOS  •  Version 1.1.0", 12, muted)
+        // SYSTEM DIAGNOSTICS
+        content.addView(heading("04 / SYSTEM TELEMETRY"))
+        content.addView(space(12))
+
+        val diagnostics = cyberCard()
+
+        diagnostics.addView(
+            text("Bluetooth monitor", 14, primaryText, true)
+        )
+        diagnostics.addView(space(8))
+        diagnostics.addView(
+            text("Connection monitoring enabled", 12, muted)
+        )
+        diagnostics.addView(space(16))
+        diagnostics.addView(
+            text("Battery telemetry", 14, primaryText, true)
+        )
+        diagnostics.addView(space(8))
+        diagnostics.addView(
+            text("Battery decoding is still in development", 12, muted)
         )
 
-        setContentView(scroll)
+        content.addView(diagnostics)
+        content.addView(space(28))
+
+        content.addView(
+            text("PodsOS  •  CYBER EDITION", 11, muted, true).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        scroll.addView(content)
+
+        // FIXED BOTTOM NAVIGATION
+        val navigation = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(4, 8, 4, 8)
+            background = rounded(panel, 20).apply {
+                setStroke(1, borderColor)
+            }
+        }
+
+        val tabs = listOf(
+            "HOME" to "⌂",
+            "CONTROL" to "◈",
+            "AUDIO" to "♫",
+            "DIAG" to "⌁",
+            "SETTINGS" to "⚙"
+        )
+
+        tabs.forEachIndexed { index, tab ->
+            val tabButton = TextView(this).apply {
+                text = "${tab.second}\n${tab.first}"
+                textSize = 10f
+                gravity = Gravity.CENTER
+                setPadding(2, 8, 2, 8)
+                setTextColor(if (index == 0) glow else muted)
+                setOnClickListener {
+                    if (index != 0) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "${tab.first} section is coming soon",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+
+            navigation.addView(
+                tabButton,
+                LinearLayout.LayoutParams(0, -2, 1f)
+            )
+        }
+
+        root.addView(
+            scroll,
+            LinearLayout.LayoutParams(0, 0, 1f)
+        )
+
+        root.addView(
+            navigation,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                setMargins(12, 4, 12, 12)
+            }
+        )
+
+        setContentView(root)
     }
 
     override fun onStart() {
@@ -462,11 +652,18 @@ class MainActivity : Activity() {
         val item = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
+            setPadding(6, 14, 6, 14)
+            background = rounded(
+                if (isDark) Color.rgb(41, 24, 60)
+                else Color.rgb(241, 231, 255), 16
+            ).apply {
+                setStroke(1, borderColor)
+            }
         }
 
-        item.addView(text(name, 10, muted, true))
+        item.addView(text(name, 10, glow, true))
 
-        val valueText = text(value, 22, Color.WHITE, true)
+        val valueText = text(value, 22, primaryText, true)
         batteryValueViews[name] = valueText
         item.addView(valueText)
 
@@ -491,7 +688,10 @@ class MainActivity : Activity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 18, 18, 18)
-            background = rounded(panel, 22)
+            background = rounded(panel, 26).apply {
+                setStroke(1, borderColor)
+            }
+            elevation = 3f
         }
     }
 
