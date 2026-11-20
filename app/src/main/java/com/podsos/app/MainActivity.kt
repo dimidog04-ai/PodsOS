@@ -1004,7 +1004,9 @@ class MainActivity : Activity() {
         enhancementSwitch("Spatial audio", "Immersive sound experience")
         enhancementSwitch("Volume monitor", "Audio level monitoring")
 
-        enhancements.addView(text("LEFT / RIGHT BALANCE", 11, muted, true))
+        enhancements.addView(
+            text("LEFT / RIGHT BALANCE", 11, muted, true)
+        )
         enhancements.addView(space(6))
 
         val balance = SeekBar(this).apply {
@@ -1014,10 +1016,33 @@ class MainActivity : Activity() {
                 android.content.res.ColorStateList.valueOf(accent)
             thumbTintList =
                 android.content.res.ColorStateList.valueOf(glow)
+            setPadding(dp(8), 0, dp(8), 0)
         }
-        enhancements.addView(balance)
-        enhancements.addView(space(4))
-        enhancements.addView(text("LEFT                         CENTER                         RIGHT", 9, muted))
+
+        enhancements.addView(
+            balance,
+            LinearLayout.LayoutParams(-1, dp(42))
+        )
+
+        val balanceLabels = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        val leftLabel = text("LEFT", 9, muted)
+        val centerLabel = text("CENTER", 9, muted)
+        val rightLabel = text("RIGHT", 9, muted)
+
+        leftLabel.gravity = Gravity.START
+        centerLabel.gravity = Gravity.CENTER
+        rightLabel.gravity = Gravity.END
+
+        balanceLabels.addView(leftLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        balanceLabels.addView(centerLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        balanceLabels.addView(rightLabel, LinearLayout.LayoutParams(0, -2, 1f))
+
+        enhancements.addView(balanceLabels)
+
+        page.addView(space(dp(36)))
 
         page.addView(enhancements)
 
