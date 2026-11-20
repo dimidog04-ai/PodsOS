@@ -18,7 +18,9 @@ class AirPodsBattery(
 ) {
     private var scanner: BluetoothLeScanner? = null
     private var scanning = false
+    private var resultCount = 0
     private var lastPacket = ""
+    private val seenDevices = mutableSetOf<String>()
 
     private val callback = object : ScanCallback() {
 
@@ -26,20 +28,48 @@ class AirPodsBattery(
             callbackType: Int,
             result: ScanResult
         ) {
+            resultCount++
+
             val record = result.scanRecord ?: return
 
             val bytes = record.getManufacturerSpecificData(0x004C)
-                ?: return
 
-            if (bytes.isEmpty()) return
+            if (bytes != null && bytes.isNotEmpty()) {
+                val packet = bytes.joinToString(" ") {
+                    "%02X".format(it.toInt() and 0xFF)
+                }
 
-            val packet = bytes.joinToString(" ") {
-                "%02X".format(it.toInt() and 0xFF)
+                if (packet != lastPacket) {
+                    lastPacket = packet
+                    onStatusUpdate("Apple BLE data: $packet")
+                }
+
+                return
             }
 
-            if (packet != lastPacket) {
-                lastPacket = packet
-                onStatusUpdate("Apple BLE data: $packet")
+            val name = record.deviceName ?: "Unknown device"
+
+            val manufacturerIds = (0 until
+                record.manufacturerSpecificData.size()).map {
+                "0x%04X".format(
+                    record.manufacturerSpecificData.keyAt(it)
+                )
+            }
+
+            val services = record.serviceUuids?.joinToString {
+                it.toString()
+            } ?: "None"
+
+            val deviceKey = "$name|$manufacturerIds|$services"
+
+            if (seenDevices.add(deviceKey)) {
+                onStatusUpdate(
+                    "BLE detected: $name\n" +
+                    "RSSI: ${result.rssi} dBm\n" +
+                    "Manufacturer IDs: ${manufacturerIds.ifEmpty { listOf("None") }}\n" +
+                    "Services: $services\n" +
+                    "Total scan results: $resultCount"
+                )
             }
         }
 
@@ -68,7 +98,11 @@ class AirPodsBattery(
             scanner?.startScan(null, settings, callback)
             scanning = true
 
-            onStatusUpdate("Scanning for Apple Bluetooth data...")
+            resultCount = 0
+            lastPacket = ""
+            seenDevices.clear()
+
+            onStatusUpdate("Scanning for nearby Bluetooth devices...")
 
         } catch (e: SecurityException) {
             onStatusUpdate("Bluetooth scan permission required")
