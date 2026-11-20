@@ -3,55 +3,117 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center_vertical"
-    android:padding="12dp"
+    android:gravity="top"
+    android:padding="16dp"
     android:background="@drawable/podsos_widget_background">
+
+    <!-- BRAND HEADER -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PodsOS"
+        android:textColor="#FFFFFF"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.02" />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="P O D S O S     /     COMPANION"
+        android:text="NEXT-GEN AUDIO INTERFACE"
+        android:textColor="#B5A0CD"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.12" />
+
+    <!-- DEVICE CONNECTION -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="01 / DEVICE CONNECTION"
         android:textColor="#C084FC"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.08"
+        android:paddingTop="17dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AirPods 4 ANC"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingTop="5dp" />
 
     <TextView
         android:id="@+id/widget_connection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="● DISCONNECTED  •  AIRPODS 4 ANC"
-        android:textColor="#FFFFFF"
+        android:text="● DISCONNECTED"
+        android:textColor="#B5A0CD"
         android:textSize="12sp"
-        android:textStyle="bold"
-        android:paddingTop="8dp" />
+        android:paddingTop="4dp" />
 
+    <!-- BATTERY TELEMETRY -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="BATTERY TELEMETRY"
         android:textColor="#C084FC"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.08"
+        android:paddingTop="17dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="LEFT             RIGHT             CASE"
+        android:textColor="#B5A0CD"
         android:textSize="9sp"
         android:textStyle="bold"
-        android:paddingTop="12dp" />
+        android:paddingTop="7dp" />
 
     <TextView
         android:id="@+id/widget_left_battery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="L  --%     R  --%     CASE  --%"
+        android:text="--%             --%             --%"
         android:textColor="#FFFFFF"
-        android:textSize="17sp"
+        android:textSize="19sp"
         android:textStyle="bold"
-        android:paddingTop="5dp" />
+        android:paddingTop="3dp" />
+
+    <!-- AUDIO ENVIRONMENT -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="02 / AUDIO ENVIRONMENT"
+        android:textColor="#C084FC"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.08"
+        android:paddingTop="17dp" />
 
     <TextView
         android:id="@+id/widget_noise_mode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="NOISE CONTROL   /   UNAVAILABLE"
-        android:textColor="#C084FC"
-        android:textSize="10sp"
+        android:text="NOISE CONTROL / UNAVAILABLE"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
         android:textStyle="bold"
-        android:paddingTop="10dp" />
+        android:paddingTop="5dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PODSOS  •  CYBER EDITION"
+        android:textColor="#B5A0CD"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingTop="16dp" />
 
 </LinearLayout>
