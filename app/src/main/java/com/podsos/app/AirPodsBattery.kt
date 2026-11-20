@@ -113,7 +113,7 @@ class AirPodsBattery(
                 .setReportDelay(0)
                 .build()
 
-            scanner?.startScan(filters, settings, callback)
+            scanner?.startScan(callback)
 
             scanning = true
 
