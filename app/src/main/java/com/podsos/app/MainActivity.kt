@@ -117,9 +117,23 @@ class MainActivity : Activity() {
                 )
         }
 
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false)
+        }
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
+        }
+
+        root.setOnApplyWindowInsetsListener { view, insets ->
+            view.setPadding(
+                0,
+                insets.systemWindowInsetTop,
+                0,
+                insets.systemWindowInsetBottom
+            )
+            insets
         }
 
         val pageContainer = FrameLayout(this)
@@ -255,23 +269,21 @@ class MainActivity : Activity() {
         )
 
         // CONNECTION REFRESH
-        val refresh = Button(this).apply {
+        val refresh = TextView(this).apply {
             text = "⟳   REFRESH CONNECTION"
             textSize = 13f
-            isAllCaps = false
+            gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
             background = rounded(accent, 18)
+            isClickable = true
+            isFocusable = true
             setOnClickListener {
                 checkBluetoothPermission()
             }
         }
 
-        content.addView(
-            refresh,
-            LinearLayout.LayoutParams(
-                -1, 54
-            )
-        )
+        content.addView(refresh, LinearLayout.LayoutParams(-1, dp(54)))
+
         content.addView(space(26))
 
         // AUDIO ENVIRONMENT
@@ -292,16 +304,17 @@ class MainActivity : Activity() {
         )
 
         audioModes.forEach { mode ->
-            val modeButton = Button(this).apply {
+            val modeButton = TextView(this).apply {
                 text = mode
                 textSize = 13f
-                isAllCaps = false
+                gravity = Gravity.CENTER
                 setTextColor(primaryText)
                 background = rounded(
                     if (isDark) Color.rgb(53, 34, 72)
                     else Color.rgb(241, 231, 255), 16
                 )
-
+                isClickable = true
+                isFocusable = true
                 setOnClickListener {
                     Toast.makeText(
                         this@MainActivity,
@@ -313,8 +326,8 @@ class MainActivity : Activity() {
 
             audioPanel.addView(
                 modeButton,
-                LinearLayout.LayoutParams(-1, 52).apply {
-                    bottomMargin = 8
+                LinearLayout.LayoutParams(-1, dp(52)).apply {
+                    bottomMargin = dp(8)
                 }
             )
         }
@@ -384,7 +397,7 @@ class MainActivity : Activity() {
         val navigation = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(6, 14, 6, 14)
+            setPadding(dp(6), dp(6), dp(6), dp(6))
             background = rounded(panel, 22).apply {
                 setStroke(1, borderColor)
             }
@@ -398,23 +411,58 @@ class MainActivity : Activity() {
             "SETTINGS" to "⚙"
         )
 
+        val tabViews = mutableListOf<LinearLayout>()
+        val tabIcons = mutableListOf<TextView>()
+        val tabLabels = mutableListOf<TextView>()
+        var selectedTab = 0
+
+        fun updateTabSelection(activeIndex: Int) {
+            selectedTab = activeIndex
+
+            tabViews.forEachIndexed { index, item ->
+                val active = index == selectedTab
+                item.background = rounded(
+                    if (active) {
+                        if (isDark) Color.rgb(65, 38, 88)
+                        else Color.rgb(237, 222, 255)
+                    } else {
+                        Color.TRANSPARENT
+                    },
+                    16
+                )
+                tabIcons[index].setTextColor(if (active) glow else muted)
+                tabLabels[index].setTextColor(if (active) glow else muted)
+            }
+        }
+
         tabs.forEachIndexed { index, tab ->
-            val tabButton = TextView(this).apply {
-                text = "${tab.second}\n${tab.first}"
-                textSize = 11f
+            val icon = text(tab.second, 21, muted, true).apply {
                 gravity = Gravity.CENTER
-                setPadding(2, 12, 2, 12)
-                setLineSpacing(4f, 1f)
-                setTextColor(if (index == 0) glow else muted)
+            }
+
+            val label = text(tab.first, 9, muted, true).apply {
+                gravity = Gravity.CENTER
+                maxLines = 1
+            }
+
+            val tabButton = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(2), dp(6), dp(2), dp(6))
+                isClickable = true
+                isFocusable = true
+
                 setOnClickListener {
                     when (index) {
                         0 -> {
                             scroll.visibility = View.VISIBLE
                             audioScroll.visibility = View.GONE
+                            updateTabSelection(0)
                         }
                         2 -> {
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.VISIBLE
+                            updateTabSelection(2)
                         }
                         else -> {
                             Toast.makeText(
@@ -427,11 +475,20 @@ class MainActivity : Activity() {
                 }
             }
 
+            tabButton.addView(icon)
+            tabButton.addView(label)
+
+            tabViews.add(tabButton)
+            tabIcons.add(icon)
+            tabLabels.add(label)
+
             navigation.addView(
                 tabButton,
-                LinearLayout.LayoutParams(0, 64, 1f)
+                LinearLayout.LayoutParams(0, dp(64), 1f)
             )
         }
+
+        updateTabSelection(0)
 
         root.addView(
             pageContainer,
@@ -441,7 +498,7 @@ class MainActivity : Activity() {
         root.addView(
             navigation,
             LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(12, 6, 12, 14)
+                setMargins(dp(12), dp(6), dp(12), dp(14))
             }
         )
 
@@ -778,7 +835,7 @@ class MainActivity : Activity() {
                 textSize = 11f
                 gravity = Gravity.CENTER
                 typeface = Typeface.DEFAULT_BOLD
-                setPadding(16, 19, 16, 19)
+                setPadding(dp(12), dp(14), dp(12), dp(14))
                 setTextColor(if (name == selectedPreset) Color.WHITE else muted)
                 background = rounded(
                     if (name == selectedPreset) accent else panel, 18
@@ -800,8 +857,8 @@ class MainActivity : Activity() {
                 }
             }
 
-            presetRow.addView(tile, LinearLayout.LayoutParams(132, -2).apply {
-                rightMargin = 10
+            presetRow.addView(tile, LinearLayout.LayoutParams(dp(92), -2).apply {
+                rightMargin = dp(8)
             })
         }
 
@@ -841,7 +898,7 @@ class MainActivity : Activity() {
 
             band.addView(
                 text(frequency, 11, muted, true),
-                LinearLayout.LayoutParams(58, -2)
+                LinearLayout.LayoutParams(dp(48), -2)
             )
 
             val slider = SeekBar(this).apply {
@@ -853,11 +910,39 @@ class MainActivity : Activity() {
                     android.content.res.ColorStateList.valueOf(glow)
             }
 
-            band.addView(slider, LinearLayout.LayoutParams(0, 42, 1f))
-            band.addView(
-                text("0 dB", 10, muted),
-                LinearLayout.LayoutParams(38, -2)
+            val valueLabel = text("0 dB", 10, muted)
+
+            slider.setOnSeekBarChangeListener(
+                object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(
+                        seekBar: SeekBar?,
+                        progress: Int,
+                        fromUser: Boolean
+                    ) {
+                        val value = progress - 12
+                        valueLabel.text = if (value > 0) {
+                            "+$value dB"
+                        } else {
+                            "$value dB"
+                        }
+                    }
+
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                }
             )
+
+            band.addView(
+                slider,
+                LinearLayout.LayoutParams(0, dp(42), 1f)
+            )
+
+            band.addView(
+                valueLabel,
+                LinearLayout.LayoutParams(dp(36), -2)
+            )
+
             equalizer.addView(band)
         }
 
@@ -945,6 +1030,10 @@ class MainActivity : Activity() {
 
         scroll.addView(page)
         return scroll
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     private fun card(): LinearLayout {
