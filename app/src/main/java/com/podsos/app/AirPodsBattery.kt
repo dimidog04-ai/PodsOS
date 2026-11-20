@@ -1,3 +1,4 @@
+
 package com.podsos.app
 
 import android.bluetooth.BluetoothAdapter
@@ -20,6 +21,7 @@ class AirPodsBattery(
     private var scanning = false
     private var resultCount = 0
     private var lastPacket = ""
+
     private val seenDevices = mutableSetOf<String>()
 
     private val callback = object : ScanCallback() {
@@ -30,24 +32,42 @@ class AirPodsBattery(
         ) {
             resultCount++
 
-            val record = result.scanRecord ?: return
+            val record = result.scanRecord
 
-            val bytes = record.getManufacturerSpecificData(0x004C)
+            if (record == null) {
+                onStatusUpdate(
+                    "BLE callback received!\n" +
+                    "No scan record\n" +
+                    "RSSI: ${result.rssi} dBm\n" +
+                    "Results: $resultCount"
+                )
+                return
+            }
 
-            if (bytes != null && bytes.isNotEmpty()) {
-                val packet = bytes.joinToString(" ") {
+            val deviceName = record.deviceName ?: "Unknown device"
+
+            val manufacturerData =
+                record.getManufacturerSpecificData(0x004C)
+
+            if (manufacturerData != null && manufacturerData.isNotEmpty()) {
+
+                val packet = manufacturerData.joinToString(" ") {
                     "%02X".format(it.toInt() and 0xFF)
                 }
 
                 if (packet != lastPacket) {
                     lastPacket = packet
-                    onStatusUpdate("Apple BLE data: $packet")
+
+                    onStatusUpdate(
+                        "APPLE BLUETOOTH DATA\n" +
+                        "Device: $deviceName\n" +
+                        "RSSI: ${result.rssi} dBm\n" +
+                        "Data: $packet"
+                    )
                 }
 
                 return
             }
-
-            val name = record.deviceName ?: "Unknown device"
 
             val manufacturerIds = (0 until
                 record.manufacturerSpecificData.size()).map {
@@ -60,52 +80,80 @@ class AirPodsBattery(
                 it.toString()
             } ?: "None"
 
-            val deviceKey = "$name|$manufacturerIds|$services"
+            val deviceKey = "$deviceName|$manufacturerIds|$services"
 
             if (seenDevices.add(deviceKey)) {
                 onStatusUpdate(
-                    "BLE detected: $name\n" +
+                    "BLE DEVICE DETECTED\n" +
+                    "Name: $deviceName\n" +
                     "RSSI: ${result.rssi} dBm\n" +
-                    "Manufacturer IDs: ${manufacturerIds.ifEmpty { listOf("None") }}\n" +
+                    "Manufacturer: ${manufacturerIds.ifEmpty { listOf("None") }}\n" +
                     "Services: $services\n" +
-                    "Total scan results: $resultCount"
+                    "Total results: $resultCount"
                 )
             }
         }
 
+        override fun onBatchScanResults(results: MutableList<ScanResult>) {
+            onStatusUpdate(
+                "BLE batch received: ${results.size} devices"
+            )
+        }
+
         override fun onScanFailed(errorCode: Int) {
             scanning = false
-            onStatusUpdate("Bluetooth scan failed: $errorCode")
+
+            onStatusUpdate(
+                "BLUETOOTH SCAN FAILED\nError code: $errorCode"
+            )
         }
     }
 
     fun start() {
         try {
             val adapter = BluetoothAdapter.getDefaultAdapter()
-            scanner = adapter?.bluetoothLeScanner
+
+            if (adapter == null) {
+                onStatusUpdate("Bluetooth adapter unavailable")
+                return
+            }
+
+            if (!adapter.isEnabled) {
+                onStatusUpdate("Bluetooth is turned off")
+                return
+            }
+
+            scanner = adapter.bluetoothLeScanner
 
             if (scanner == null) {
-                onStatusUpdate("BLE scanning unavailable")
+                onStatusUpdate("BLE scanner unavailable")
                 return
             }
 
             if (scanning) return
+
+            resultCount = 0
+            lastPacket = ""
+            seenDevices.clear()
 
             val settings = ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .build()
 
             scanner?.startScan(null, settings, callback)
+
             scanning = true
 
-            resultCount = 0
-            lastPacket = ""
-            seenDevices.clear()
-
-            onStatusUpdate("Scanning for nearby Bluetooth devices...")
+            onStatusUpdate(
+                "BLE scanner started\nWaiting for advertisements..."
+            )
 
         } catch (e: SecurityException) {
-            onStatusUpdate("Bluetooth scan permission required")
+            onStatusUpdate("Bluetooth scan permission denied")
+        } catch (e: Exception) {
+            onStatusUpdate(
+                "Scanner error: ${e.javaClass.simpleName}: ${e.message}"
+            )
         }
     }
 
@@ -114,7 +162,7 @@ class AirPodsBattery(
             if (scanning) {
                 scanner?.stopScan(callback)
             }
-        } catch (_: SecurityException) {
+        } catch (_: Exception) {
         }
 
         scanning = false
