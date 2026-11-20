@@ -20,6 +20,15 @@ class PodsOSWidgetProvider : AppWidgetProvider() {
                 R.layout.podsos_widget
             )
 
+            views.setTextViewText(R.id.widget_connection, "● DISCONNECTED")
+            views.setTextViewText(R.id.widget_left_battery, "--%")
+            views.setTextViewText(R.id.widget_right_battery, "--%")
+            views.setTextViewText(R.id.widget_case_battery, "--%")
+            views.setTextViewText(
+                R.id.widget_noise_mode,
+                "NOISE CONTROL • UNAVAILABLE"
+            )
+
             val intent = Intent(context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 context,
@@ -30,7 +39,7 @@ class PodsOSWidgetProvider : AppWidgetProvider() {
             )
 
             views.setOnClickPendingIntent(
-                android.R.id.background,
+                R.id.widget_connection,
                 pendingIntent
             )
 
