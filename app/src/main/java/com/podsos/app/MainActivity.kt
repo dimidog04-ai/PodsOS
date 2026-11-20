@@ -20,6 +20,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import android.widget.FrameLayout
 
 class MainActivity : Activity() {
 
@@ -121,6 +122,7 @@ class MainActivity : Activity() {
             setBackgroundColor(bg)
         }
 
+        val pageContainer = FrameLayout(this)
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             clipToPadding = false
@@ -372,6 +374,11 @@ class MainActivity : Activity() {
         )
 
         scroll.addView(content)
+        pageContainer.addView(scroll)
+
+        val audioScroll = buildAudioScreen()
+        audioScroll.visibility = View.GONE
+        pageContainer.addView(audioScroll)
 
         // FIXED BOTTOM NAVIGATION
         val navigation = LinearLayout(this).apply {
@@ -400,12 +407,22 @@ class MainActivity : Activity() {
                 setLineSpacing(4f, 1f)
                 setTextColor(if (index == 0) glow else muted)
                 setOnClickListener {
-                    if (index != 0) {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "${tab.first} section is coming soon",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    when (index) {
+                        0 -> {
+                            scroll.visibility = View.VISIBLE
+                            audioScroll.visibility = View.GONE
+                        }
+                        2 -> {
+                            scroll.visibility = View.GONE
+                            audioScroll.visibility = View.VISIBLE
+                        }
+                        else -> {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "${tab.first} section is coming soon",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             }
@@ -417,7 +434,7 @@ class MainActivity : Activity() {
         }
 
         root.addView(
-            scroll,
+            pageContainer,
             LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
@@ -683,6 +700,251 @@ class MainActivity : Activity() {
         data.case?.let {
             batteryValueViews["CASE"]?.text = "$it%"
         }
+    }
+
+
+    private fun buildAudioScreen(): ScrollView {
+        val page = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(22, 22, 22, 30)
+            setBackgroundColor(bg)
+        }
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+        }
+
+        // AUDIO HEADER
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        header.addView(text("PodsOS  /  AUDIO SYSTEM", 11, glow, true))
+        header.addView(space(10))
+        header.addView(text("AUDIO CONTROL", 29, primaryText, true))
+        header.addView(text("Advanced sound configuration", 14, muted))
+        page.addView(header)
+        page.addView(space(24))
+
+        // CONNECTED DEVICE
+        val device = card()
+        device.addView(text("CONNECTED DEVICE", 11, glow, true))
+        device.addView(space(14))
+
+        val deviceRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        deviceRow.addView(text("◉", 34, glow, true))
+        val deviceInfo = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 0, 0, 0)
+        }
+        deviceInfo.addView(text("AirPods 4 ANC", 20, primaryText, true))
+        deviceInfo.addView(text("Bluetooth audio device", 12, muted))
+        deviceRow.addView(deviceInfo, LinearLayout.LayoutParams(0, -2, 1f))
+        deviceRow.addView(text("CONNECTED", 10, glow, true))
+        device.addView(deviceRow)
+
+        page.addView(device, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = 22
+        })
+
+        // SOUND PRESETS
+        val presetHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        presetHeader.addView(
+            text("SOUND PRESETS", 13, primaryText, true),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+        presetHeader.addView(text("SELECT A PROFILE", 9, muted, true))
+        page.addView(presetHeader)
+        page.addView(space(12))
+
+        val presetRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        var selectedPreset = "BALANCED"
+        val presetNames = listOf("BALANCED", "DEEP BASS", "VOCALS", "GAMING")
+
+        presetNames.forEach { name ->
+            val tile = TextView(this).apply {
+                text = name
+                textSize = 11f
+                gravity = Gravity.CENTER
+                typeface = Typeface.DEFAULT_BOLD
+                setPadding(16, 19, 16, 19)
+                setTextColor(if (name == selectedPreset) Color.WHITE else muted)
+                background = rounded(
+                    if (name == selectedPreset) accent else panel, 18
+                ).apply {
+                    setStroke(1, borderColor)
+                }
+                setOnClickListener {
+                    selectedPreset = name
+                    for (i in 0 until presetRow.childCount) {
+                        val item = presetRow.getChildAt(i) as TextView
+                        val active = item.text == selectedPreset
+                        item.setTextColor(if (active) Color.WHITE else muted)
+                        item.background = rounded(
+                            if (active) accent else panel, 18
+                        ).apply {
+                            setStroke(1, borderColor)
+                        }
+                    }
+                }
+            }
+
+            presetRow.addView(tile, LinearLayout.LayoutParams(132, -2).apply {
+                rightMargin = 10
+            })
+        }
+
+        val presetScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(presetRow)
+        }
+        page.addView(presetScroll)
+        page.addView(space(24))
+
+        // CUSTOM EQUALIZER
+        val equalizer = card()
+        val eqHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        eqHeader.addView(
+            text("CUSTOM EQUALIZER", 13, primaryText, true),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+        eqHeader.addView(text("CUSTOM", 10, glow, true))
+        equalizer.addView(eqHeader)
+        equalizer.addView(space(6))
+        equalizer.addView(text("10-band frequency control", 12, muted))
+        equalizer.addView(space(18))
+
+        val frequencies = listOf(
+            "31 Hz", "62 Hz", "125 Hz", "250 Hz", "500 Hz",
+            "1 kHz", "2 kHz", "4 kHz", "8 kHz", "16 kHz"
+        )
+
+        frequencies.forEach { frequency ->
+            val band = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            band.addView(
+                text(frequency, 11, muted, true),
+                LinearLayout.LayoutParams(58, -2)
+            )
+
+            val slider = SeekBar(this).apply {
+                max = 24
+                progress = 12
+                progressTintList =
+                    android.content.res.ColorStateList.valueOf(accent)
+                thumbTintList =
+                    android.content.res.ColorStateList.valueOf(glow)
+            }
+
+            band.addView(slider, LinearLayout.LayoutParams(0, 42, 1f))
+            band.addView(
+                text("0 dB", 10, muted),
+                LinearLayout.LayoutParams(38, -2)
+            )
+            equalizer.addView(band)
+        }
+
+        equalizer.addView(space(12))
+        equalizer.addView(text("−12 dB                         0 dB                         +12 dB", 9, muted))
+        equalizer.addView(space(10))
+
+        val reset = text("RESET EQUALIZER", 11, glow, true).apply {
+            gravity = Gravity.END
+            setPadding(0, 10, 0, 4)
+            setOnClickListener {
+                for (i in 0 until equalizer.childCount) {
+                    val row = equalizer.getChildAt(i)
+                    if (row is LinearLayout && row.childCount >= 2) {
+                        val slider = row.getChildAt(1)
+                        if (slider is SeekBar) slider.progress = 12
+                    }
+                }
+            }
+        }
+        equalizer.addView(reset)
+
+        page.addView(equalizer, LinearLayout.LayoutParams(-1, -2).apply {
+            bottomMargin = 22
+        })
+
+        // AUDIO ENHANCEMENTS
+        val enhancements = card()
+        enhancements.addView(text("AUDIO ENHANCEMENTS", 13, primaryText, true))
+        enhancements.addView(space(16))
+
+        fun enhancementSwitch(title: String, subtitle: String) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            val labels = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+            labels.addView(text(title, 14, primaryText, true))
+            labels.addView(text(subtitle, 11, muted))
+
+            row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(Switch(this).apply {
+                isChecked = false
+                setOnCheckedChangeListener { _, _ ->
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Audio processing is not connected yet",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            })
+            enhancements.addView(row)
+            enhancements.addView(space(16))
+        }
+
+        enhancementSwitch("Spatial audio", "Immersive sound experience")
+        enhancementSwitch("Volume monitor", "Audio level monitoring")
+
+        enhancements.addView(text("LEFT / RIGHT BALANCE", 11, muted, true))
+        enhancements.addView(space(6))
+
+        val balance = SeekBar(this).apply {
+            max = 100
+            progress = 50
+            progressTintList =
+                android.content.res.ColorStateList.valueOf(accent)
+            thumbTintList =
+                android.content.res.ColorStateList.valueOf(glow)
+        }
+        enhancements.addView(balance)
+        enhancements.addView(space(4))
+        enhancements.addView(text("LEFT                         CENTER                         RIGHT", 9, muted))
+
+        page.addView(enhancements)
+
+        page.addView(space(26))
+        page.addView(
+            text("PodsOS  •  AUDIO CONTROL CENTRE", 10, muted, true).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        scroll.addView(page)
+        return scroll
     }
 
     private fun card(): LinearLayout {
