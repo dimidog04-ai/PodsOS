@@ -389,6 +389,10 @@ class MainActivity : Activity() {
         scroll.addView(content)
         pageContainer.addView(scroll)
 
+        val controlScroll = buildControlScreen()
+        controlScroll.visibility = View.GONE
+        pageContainer.addView(controlScroll)
+
         val audioScroll = buildAudioScreen()
         audioScroll.visibility = View.GONE
         pageContainer.addView(audioScroll)
@@ -462,7 +466,17 @@ class MainActivity : Activity() {
 
                 setOnClickListener {
                     when (index) {
+                                    1 -> {
+                                        scroll.visibility = View.GONE
+                                        controlScroll.visibility = View.VISIBLE
+                                        audioScroll.visibility = View.GONE
+                                        settingsScroll.visibility = View.GONE
+                                        diagnosticsScroll.visibility = View.GONE
+                                        updateTabSelection(1)
+                                    }
+
                         0 -> {
+                            controlScroll.visibility = View.GONE
                             scroll.visibility = View.VISIBLE
                             audioScroll.visibility = View.GONE
                             settingsScroll.visibility = View.GONE
@@ -470,6 +484,7 @@ class MainActivity : Activity() {
                             updateTabSelection(0)
                         }
                         2 -> {
+                            controlScroll.visibility = View.GONE
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.VISIBLE
                             settingsScroll.visibility = View.GONE
@@ -477,6 +492,7 @@ class MainActivity : Activity() {
                             updateTabSelection(2)
                         }
                         3 -> {
+                            controlScroll.visibility = View.GONE
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.GONE
                             settingsScroll.visibility = View.GONE
@@ -484,6 +500,7 @@ class MainActivity : Activity() {
                             updateTabSelection(3)
                         }
                         4 -> {
+                            controlScroll.visibility = View.GONE
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.GONE
                             diagnosticsScroll.visibility = View.GONE
@@ -1342,6 +1359,114 @@ class MainActivity : Activity() {
         content.addView(space(24))
 
         val footer = text("PODSOS  •  DIAGNOSTICS CENTRE", 11, muted, true)
+        footer.gravity = android.view.Gravity.CENTER
+        content.addView(footer)
+
+        return page
+    }
+
+
+    private fun buildControlScreen(): ScrollView {
+        val page = ScrollView(this)
+        page.setBackgroundColor(bg)
+
+        val content = LinearLayout(this)
+        content.orientation = LinearLayout.VERTICAL
+        content.setPadding(dp(20), dp(24), dp(20), dp(30))
+        page.addView(content)
+
+        content.addView(text("PODSOS / DEVICE COMMAND", 12, glow, true))
+        content.addView(space(10))
+        content.addView(text("CONTROL", 30, primaryText, true))
+        content.addView(space(6))
+        content.addView(text("Your personal listening command centre", 14, muted))
+        content.addView(space(24))
+
+        val device = card()
+        device.addView(text("CONNECTED DEVICE", 11, glow, true))
+        device.addView(space(12))
+        device.addView(text("AirPods 4 ANC", 22, primaryText, true))
+        device.addView(space(6))
+        device.addView(text("Control interface preview", 13, muted))
+        device.addView(space(14))
+        device.addView(text("READY FOR CONFIGURATION", 11, glow, true))
+        content.addView(device)
+        content.addView(space(22))
+
+        content.addView(text("01 / NOISE CONTROL", 12, glow, true))
+        content.addView(space(12))
+
+        val noise = card()
+        noise.addView(text("Listening mode", 18, primaryText, true))
+        noise.addView(space(6))
+        noise.addView(text("Choose how much of the outside world you hear.", 13, muted))
+        noise.addView(space(18))
+
+        val modes = listOf(
+            "NOISE CANCELLATION",
+            "TRANSPARENCY",
+            "OFF"
+        )
+        for (mode in modes) {
+            val option = LinearLayout(this)
+            option.orientation = LinearLayout.HORIZONTAL
+            option.gravity = android.view.Gravity.CENTER_VERTICAL
+            option.setPadding(dp(14), dp(13), dp(14), dp(13))
+            option.background = rounded(panel, 14).apply {
+                setStroke(1, borderColor)
+            }
+            option.addView(text(mode, 13, primaryText, true))
+            noise.addView(option)
+            noise.addView(space(8))
+        }
+        noise.addView(text("MODE CONTROLS — PREVIEW ONLY", 10, muted, true))
+        content.addView(noise)
+        content.addView(space(22))
+
+        content.addView(text("02 / LISTENING EXPERIENCE", 12, glow, true))
+        content.addView(space(12))
+
+        val experiences = listOf(
+            "Spatial Audio" to "Immersive listening experience",
+            "Adaptive Audio" to "Automatically adjust listening modes",
+            "Conversation Awareness" to "Adjust audio during conversations"
+        )
+
+        for ((name, description) in experiences) {
+            val item = card()
+            item.addView(text(name, 16, primaryText, true))
+            item.addView(space(5))
+            item.addView(text(description, 12, muted))
+            item.addView(space(10))
+            item.addView(text("FEATURE PREVIEW", 10, glow, true))
+            content.addView(item)
+            content.addView(space(9))
+        }
+
+        content.addView(space(12))
+        content.addView(text("03 / DEVICE CONTROLS", 12, glow, true))
+        content.addView(space(12))
+
+        val deviceControls = listOf(
+            "Automatic Ear Detection" to "Detect when AirPods are being worn",
+            "Touch Controls" to "Manage playback and listening controls",
+            "Microphone" to "Configure microphone preferences"
+        )
+
+        for ((name, description) in deviceControls) {
+            val item = card()
+            item.addView(text(name, 16, primaryText, true))
+            item.addView(space(5))
+            item.addView(text(description, 12, muted))
+            item.addView(space(10))
+            item.addView(text("COMING SOON", 10, glow, true))
+            content.addView(item)
+            content.addView(space(9))
+        }
+
+        content.addView(space(18))
+
+        val footer = text("PODSOS  •  CONTROL CENTRE", 11, muted, true)
         footer.gravity = android.view.Gravity.CENTER
         content.addView(footer)
 
