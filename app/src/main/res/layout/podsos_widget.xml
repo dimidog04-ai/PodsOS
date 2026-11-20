@@ -4,13 +4,13 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_vertical"
-    android:padding="10dp"
-    android:background="#1B102A">
+    android:padding="12dp"
+    android:background="#140B22">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="PODSOS  /  AIRPODS 4 ANC"
+        android:text="P O D S O S     /     COMPANION"
         android:textColor="#C084FC"
         android:textSize="11sp"
         android:textStyle="bold" />
@@ -19,29 +19,39 @@
         android:id="@+id/widget_connection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="● DISCONNECTED"
+        android:text="● DISCONNECTED  •  AIRPODS 4 ANC"
         android:textColor="#F0ABFC"
         android:textSize="12sp"
         android:textStyle="bold"
-        android:paddingTop="5dp" />
+        android:paddingTop="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="BATTERY TELEMETRY"
+        android:textColor="#A78BFA"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:paddingTop="12dp" />
 
     <TextView
         android:id="@+id/widget_left_battery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="L --%   R --%   CASE --%"
+        android:text="L  --%     R  --%     CASE  --%"
         android:textColor="#FFFFFF"
-        android:textSize="13sp"
+        android:textSize="17sp"
         android:textStyle="bold"
-        android:paddingTop="8dp" />
+        android:paddingTop="5dp" />
 
     <TextView
         android:id="@+id/widget_noise_mode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="NOISE CONTROL • UNAVAILABLE"
+        android:text="NOISE CONTROL   /   UNAVAILABLE"
         android:textColor="#C084FC"
         android:textSize="10sp"
-        android:paddingTop="5dp" />
+        android:textStyle="bold"
+        android:paddingTop="10dp" />
 
 </LinearLayout>
