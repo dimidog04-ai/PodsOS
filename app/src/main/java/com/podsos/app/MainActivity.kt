@@ -32,6 +32,10 @@ class MainActivity : Activity() {
     private var receiverRegistered = false
     private var a2dpProxy: BluetoothProfile? = null
     private var checkingProfile = false
+    private lateinit var batteryScanner: AirPodsBattery
+    private lateinit var scanStatusText: TextView
+
+    private val batteryValueViews = mutableMapOf<String, TextView>()
 
     private val bluetoothReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -104,6 +108,20 @@ class MainActivity : Activity() {
         device.addView(text("AirPods 4 ANC", 23, Color.WHITE, true))
 
         statusText = text("Checking Bluetooth...", 14, muted)
+        scanStatusText = text("Battery scanner waiting for permission...", 12, muted)
+        batteryScanner = AirPodsBattery(
+            onBatteryUpdate = { data ->
+                runOnUiThread {
+                    updateBatteryDisplay(data)
+                }
+            },
+            onStatusUpdate = { message ->
+                runOnUiThread {
+                    scanStatusText.text = message
+                }
+            }
+        )
+
         device.addView(statusText)
         device.addView(space(18))
 
@@ -128,6 +146,8 @@ class MainActivity : Activity() {
         )
 
         device.addView(battery)
+        device.addView(space(10))
+        device.addView(scanStatusText)
         root.addView(device)
 
         root.addView(space(12))
@@ -251,6 +271,7 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         super.onStop()
+        if (::batteryScanner.isInitialized) batteryScanner.stop()
 
         if (receiverRegistered) {
             unregisterReceiver(bluetoothReceiver)
@@ -275,19 +296,27 @@ class MainActivity : Activity() {
 
     private fun checkBluetoothPermission() {
 
-        if (Build.VERSION.SDK_INT >= 31 &&
-            checkSelfPermission(
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                1001
+        if (Build.VERSION.SDK_INT >= 31) {
+            val permissions = arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
             )
-            return
+
+            val missing = permissions.filter {
+                checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+            }
+
+            if (missing.isNotEmpty()) {
+                requestPermissions(
+                    missing.toTypedArray(),
+                    1001
+                )
+                return
+            }
         }
 
         detectAirPods()
+        if (::batteryScanner.isInitialized) batteryScanner.start()
     }
 
     override fun onRequestPermissionsResult(
@@ -303,11 +332,14 @@ class MainActivity : Activity() {
 
         if (requestCode == 1001) {
             if (grantResults.isNotEmpty() &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED
+                grantResults.all {
+                    it == PackageManager.PERMISSION_GRANTED
+                }
             ) {
                 detectAirPods()
+                if (::batteryScanner.isInitialized) batteryScanner.start()
             } else {
-                statusText.text = "Bluetooth permission required"
+                statusText.text = "Bluetooth permissions required"
             }
         }
     }
@@ -433,9 +465,26 @@ class MainActivity : Activity() {
         }
 
         item.addView(text(name, 10, muted, true))
-        item.addView(text(value, 22, Color.WHITE, true))
+
+        val valueText = text(value, 22, Color.WHITE, true)
+        batteryValueViews[name] = valueText
+        item.addView(valueText)
 
         return item
+    }
+
+    private fun updateBatteryDisplay(data: AirPodsBatteryData) {
+        data.left?.let {
+            batteryValueViews["LEFT"]?.text = "$it%"
+        }
+
+        data.right?.let {
+            batteryValueViews["RIGHT"]?.text = "$it%"
+        }
+
+        data.case?.let {
+            batteryValueViews["CASE"]?.text = "$it%"
+        }
     }
 
     private fun card(): LinearLayout {
