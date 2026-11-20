@@ -377,8 +377,8 @@ class MainActivity : Activity() {
         val navigation = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(4, 8, 4, 8)
-            background = rounded(panel, 20).apply {
+            setPadding(6, 14, 6, 14)
+            background = rounded(panel, 22).apply {
                 setStroke(1, borderColor)
             }
         }
@@ -394,9 +394,10 @@ class MainActivity : Activity() {
         tabs.forEachIndexed { index, tab ->
             val tabButton = TextView(this).apply {
                 text = "${tab.second}\n${tab.first}"
-                textSize = 10f
+                textSize = 11f
                 gravity = Gravity.CENTER
-                setPadding(2, 8, 2, 8)
+                setPadding(2, 12, 2, 12)
+                setLineSpacing(4f, 1f)
                 setTextColor(if (index == 0) glow else muted)
                 setOnClickListener {
                     if (index != 0) {
@@ -411,7 +412,7 @@ class MainActivity : Activity() {
 
             navigation.addView(
                 tabButton,
-                LinearLayout.LayoutParams(0, -2, 1f)
+                LinearLayout.LayoutParams(0, 64, 1f)
             )
         }
 
@@ -423,7 +424,7 @@ class MainActivity : Activity() {
         root.addView(
             navigation,
             LinearLayout.LayoutParams(-1, -2).apply {
-                setMargins(12, 4, 12, 12)
+                setMargins(12, 6, 12, 14)
             }
         )
 
