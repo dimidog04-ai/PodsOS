@@ -417,7 +417,7 @@ class MainActivity : Activity() {
 
         root.addView(
             scroll,
-            LinearLayout.LayoutParams(0, 0, 1f)
+            LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
         root.addView(
