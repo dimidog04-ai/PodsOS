@@ -5,7 +5,12 @@ import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothA2dp
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothProfile
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -20,10 +25,54 @@ class MainActivity : Activity() {
 
     private val bg = Color.rgb(12, 14, 20)
     private val panel = Color.rgb(27, 30, 40)
-    private val accent = Color.rgb(150, 125, 255)
     private val muted = Color.rgb(155, 160, 177)
 
     private lateinit var statusText: TextView
+    private var receiverRegistered = false
+
+    private val bluetoothReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+
+            val device = getBluetoothDevice(intent) ?: return
+
+            try {
+                val name = device.name ?: return
+
+                if (!name.contains("AirPods", ignoreCase = true)) {
+                    return
+                }
+
+                when (intent.action) {
+
+                    BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED -> {
+                        val state = intent.getIntExtra(
+                            BluetoothProfile.EXTRA_STATE,
+                            BluetoothProfile.STATE_DISCONNECTED
+                        )
+
+                        when (state) {
+                            BluetoothProfile.STATE_CONNECTED ->
+                                statusText.text = "Connected: $name"
+
+                            BluetoothProfile.STATE_DISCONNECTED ->
+                                statusText.text = "Disconnected"
+                        }
+                    }
+
+                    BluetoothDevice.ACTION_ACL_CONNECTED -> {
+                        statusText.text = "Bluetooth connected: $name"
+                    }
+
+                    BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                        statusText.text = "Disconnected"
+                    }
+                }
+
+            } catch (e: SecurityException) {
+                statusText.text = "Bluetooth permission required"
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,14 +127,13 @@ class MainActivity : Activity() {
         root.addView(text("NOISE CONTROL", 13, muted, true))
         root.addView(space(10))
 
-        val modes = listOf(
+        listOf(
             "Noise Cancellation",
             "Transparency",
             "Adaptive Audio",
             "Off"
-        )
+        ).forEach { mode ->
 
-        modes.forEach { mode ->
             val button = Button(this).apply {
                 text = mode
                 textSize = 14f
@@ -133,7 +181,7 @@ class MainActivity : Activity() {
         root.addView(settings)
         root.addView(space(28))
         root.addView(
-            text("PodsOS  •  Version 1.0.0", 12, muted)
+            text("PodsOS  •  Version 1.1.0", 12, muted)
         )
 
         setContentView(scroll)
@@ -141,18 +189,51 @@ class MainActivity : Activity() {
         checkBluetoothPermission()
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        val filter = IntentFilter().apply {
+            addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+        }
+
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(
+                bluetoothReceiver,
+                filter,
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            registerReceiver(bluetoothReceiver, filter)
+        }
+
+        receiverRegistered = true
+
+        if (::statusText.isInitialized) {
+            checkBluetoothPermission()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        if (receiverRegistered) {
+            unregisterReceiver(bluetoothReceiver)
+            receiverRegistered = false
+        }
+    }
+
     private fun checkBluetoothPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (checkSelfPermission(
-                    Manifest.permission.BLUETOOTH_CONNECT
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissions(
-                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
-                    1001
-                )
-                return
-            }
+        if (Build.VERSION.SDK_INT >= 31 &&
+            checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                1001
+            )
+            return
         }
 
         detectAirPods()
@@ -181,26 +262,28 @@ class MainActivity : Activity() {
     }
 
     private fun detectAirPods() {
-        val adapter = BluetoothAdapter.getDefaultAdapter()
-
-        if (adapter == null) {
-            statusText.text = "Bluetooth not supported"
-            return
-        }
-
-        if (!adapter.isEnabled) {
-            statusText.text = "Bluetooth is turned off"
-            return
-        }
-
         try {
+            val adapter = BluetoothAdapter.getDefaultAdapter()
+
+            if (adapter == null) {
+                statusText.text = "Bluetooth not supported"
+                return
+            }
+
+            if (!adapter.isEnabled) {
+                statusText.text = "Bluetooth is turned off"
+                return
+            }
+
             val listener = object : BluetoothProfile.ServiceListener {
 
                 override fun onServiceConnected(
                     profile: Int,
                     proxy: BluetoothProfile
                 ) {
-                    if (profile == BluetoothProfile.A2DP) {
+                    if (profile != BluetoothProfile.A2DP) return
+
+                    try {
                         val connected = proxy.connectedDevices
 
                         val airPods = connected.firstOrNull {
@@ -227,6 +310,13 @@ class MainActivity : Activity() {
                                 "No AirPods connection detected"
                             }
                         }
+                    } catch (e: SecurityException) {
+                        statusText.text = "Bluetooth permission required"
+                    } finally {
+                        adapter.closeProfileProxy(
+                            BluetoothProfile.A2DP,
+                            proxy
+                        )
                     }
                 }
 
@@ -243,6 +333,18 @@ class MainActivity : Activity() {
 
         } catch (e: SecurityException) {
             statusText.text = "Bluetooth permission required"
+        }
+    }
+
+    private fun getBluetoothDevice(intent: Intent): BluetoothDevice? {
+        return if (Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(
+                BluetoothDevice.EXTRA_DEVICE,
+                BluetoothDevice::class.java
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
         }
     }
 
