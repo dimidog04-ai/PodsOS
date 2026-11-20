@@ -45,6 +45,15 @@ class AirPodsBattery(
 
             val manufacturer = record.manufacturerSpecificData
             val manufacturerInfo = StringBuilder()
+            android.util.Log.d("PodsOS_BLE", "========== BLE PACKET ==========")
+            android.util.Log.d("PodsOS_BLE", "Device: ${record.deviceName}")
+            android.util.Log.d("PodsOS_BLE", "RSSI: ${result.rssi} dBm")
+            for (i in 0 until manufacturer.size()) {
+                val id = manufacturer.keyAt(i)
+                val bytes = manufacturer.valueAt(i)
+                val hex = bytes.joinToString("") { "%02X".format(it.toInt() and 0xFF) }
+                android.util.Log.d("PodsOS_BLE", "Manufacturer ID: 0x%04X | RAW: %s".format(id, hex))
+            }
 
             for (i in 0 until manufacturer.size()) {
                 val id = manufacturer.keyAt(i)
