@@ -393,6 +393,10 @@ class MainActivity : Activity() {
         audioScroll.visibility = View.GONE
         pageContainer.addView(audioScroll)
 
+        val settingsScroll = buildSettingsScreen()
+        settingsScroll.visibility = View.GONE
+        pageContainer.addView(settingsScroll)
+
         // FIXED BOTTOM NAVIGATION
         val navigation = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -457,12 +461,20 @@ class MainActivity : Activity() {
                         0 -> {
                             scroll.visibility = View.VISIBLE
                             audioScroll.visibility = View.GONE
+                            settingsScroll.visibility = View.GONE
                             updateTabSelection(0)
                         }
                         2 -> {
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.VISIBLE
+                            settingsScroll.visibility = View.GONE
                             updateTabSelection(2)
+                        }
+                        4 -> {
+                            scroll.visibility = View.GONE
+                            audioScroll.visibility = View.GONE
+                            settingsScroll.visibility = View.VISIBLE
+                            updateTabSelection(4)
                         }
                         else -> {
                             Toast.makeText(
@@ -1055,6 +1067,174 @@ class MainActivity : Activity() {
 
         scroll.addView(page)
         return scroll
+    }
+
+    private fun buildSettingsScreen(): ScrollView {
+        val page = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(22, 22, 22, 30)
+            setBackgroundColor(bg)
+        }
+
+        fun addSection(title: String, subtitle: String, rows: List<Pair<String, String>>) {
+            val panel = card()
+            panel.addView(text(title, 15, primaryText, true))
+            panel.addView(space(5))
+            panel.addView(text(subtitle, 11, muted))
+            panel.addView(space(16))
+
+            rows.forEachIndexed { index, item ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dp(9), 0, dp(9))
+                }
+
+                row.addView(
+                    text("◈", 20, glow, true),
+                    LinearLayout.LayoutParams(dp(38), -2)
+                )
+
+                val labels = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                }
+                labels.addView(text(item.first, 13, primaryText, true))
+                labels.addView(space(3))
+                labels.addView(text(item.second, 11, muted))
+
+                row.addView(labels, LinearLayout.LayoutParams(0, -2, 1f))
+                row.addView(text("›", 25, muted))
+
+                panel.addView(row)
+
+                if (index != rows.lastIndex) {
+                    val divider = View(this).apply {
+                        setBackgroundColor(borderColor)
+                    }
+                    panel.addView(
+                        divider,
+                        LinearLayout.LayoutParams(-1, dp(1))
+                    )
+                }
+            }
+
+            page.addView(
+                panel,
+                LinearLayout.LayoutParams(-1, -2).apply {
+                    bottomMargin = dp(16)
+                }
+            )
+        }
+
+        page.addView(text("PODSOS / SYSTEM", 11, glow, true))
+        page.addView(space(8))
+        page.addView(text("SETTINGS", 30, primaryText, true))
+        page.addView(text("Personalize your PodsOS experience", 13, muted))
+        page.addView(space(24))
+
+        val appearance = card()
+        appearance.addView(text("01 / APPEARANCE", 11, glow, true))
+        appearance.addView(space(10))
+        appearance.addView(text("Visual experience", 19, primaryText, true))
+        appearance.addView(space(5))
+        appearance.addView(text("Choose the look and feel of PodsOS.", 12, muted))
+        appearance.addView(space(16))
+
+        val appearanceOptions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        listOf("SYSTEM", "DARK", "LIGHT").forEachIndexed { index, option ->
+            val selected = (index == 0 && !isDark) || (index == 1 && isDark)
+            val choice = TextView(this).apply {
+                text = option
+                textSize = 10f
+                gravity = Gravity.CENTER
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(if (selected) Color.WHITE else muted)
+                background = rounded(
+                    if (selected) accent else bg, 14
+                ).apply {
+                    setStroke(1, borderColor)
+                }
+                setPadding(dp(8), dp(13), dp(8), dp(13))
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Appearance selection will be enabled soon",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            appearanceOptions.addView(
+                choice,
+                LinearLayout.LayoutParams(0, -2, 1f).apply {
+                    marginEnd = dp(7)
+                }
+            )
+        }
+
+        appearance.addView(appearanceOptions)
+        page.addView(
+            appearance,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                bottomMargin = dp(16)
+            }
+        )
+
+        addSection(
+            "02 / NOTIFICATIONS",
+            "Manage alerts from your AirPods.",
+            listOf(
+                "Connection alerts" to "Know when your AirPods connect",
+                "Battery alerts" to "Get notified when battery is low"
+            )
+        )
+
+        addSection(
+            "03 / DEVICE PREFERENCES",
+            "Manage your companion experience.",
+            listOf(
+                "Preferred device" to "AirPods 4 ANC",
+                "Connection behaviour" to "Automatic connection options",
+                "Device information" to "View paired device details"
+            )
+        )
+
+        addSection(
+            "04 / PERMISSIONS",
+            "PodsOS system access.",
+            listOf(
+                "Bluetooth access" to "Connection and device monitoring",
+                "Notification access" to "Battery and connection alerts"
+            )
+        )
+
+        addSection(
+            "05 / ABOUT PODSOS",
+            "Your personal audio companion.",
+            listOf(
+                "App version" to "PodsOS 1.2.0",
+                "Build information" to "Cyber Edition",
+                "Credits" to "Designed and developed for Android"
+            )
+        )
+
+        page.addView(
+            text("PODSOS  •  SYSTEM CENTRE", 10, muted, true).apply {
+                gravity = Gravity.CENTER
+            }
+        )
+
+        return ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            addView(page)
+        }
     }
 
     private fun dp(value: Int): Int {
