@@ -54,6 +54,7 @@ class MainActivity : Activity() {
     private var checkingProfile = false
     private lateinit var batteryScanner: AirPodsBattery
     private lateinit var scanStatusText: TextView
+    private var bleDiagnosticsText: TextView? = null
 
     private val batteryValueViews = mutableMapOf<String, TextView>()
 
@@ -264,6 +265,7 @@ class MainActivity : Activity() {
             onStatusUpdate = { message ->
                 runOnUiThread {
                     scanStatusText.text = message
+                    bleDiagnosticsText?.text = message
                 }
             }
         )
@@ -1328,7 +1330,23 @@ class MainActivity : Activity() {
         content.addView(bluetooth)
         content.addView(space(20))
 
-        content.addView(text("04 / DIAGNOSTIC TEST CENTRE", 12, glow, true))
+        content.addView(text("04 / BLE SCANNER TELEMETRY", 12, glow, true))
+        content.addView(space(12))
+
+        val bleCard = card()
+        bleCard.addView(text("LIVE ADVERTISEMENT DATA", 14, primaryText, true))
+        bleCard.addView(space(10))
+
+        bleDiagnosticsText = text(
+            "Waiting for BLE scanner data...",
+            12,
+            muted
+        )
+        bleCard.addView(bleDiagnosticsText)
+        content.addView(bleCard)
+        content.addView(space(20))
+
+        content.addView(text("05 / DIAGNOSTIC TEST CENTRE", 12, glow, true))
         content.addView(space(12))
 
         val tests = listOf(
