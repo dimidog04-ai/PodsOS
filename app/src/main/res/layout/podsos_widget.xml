@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:gravity="center_vertical"
     android:padding="12dp"
-    android:background="#140B22">
+    android:background="@drawable/podsos_widget_background">
 
     <TextView
         android:layout_width="match_parent"
@@ -20,7 +20,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="● DISCONNECTED  •  AIRPODS 4 ANC"
-        android:textColor="#F0ABFC"
+        android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:textStyle="bold"
         android:paddingTop="8dp" />
@@ -29,7 +29,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="BATTERY TELEMETRY"
-        android:textColor="#A78BFA"
+        android:textColor="#C084FC"
         android:textSize="9sp"
         android:textStyle="bold"
         android:paddingTop="12dp" />
