@@ -397,6 +397,10 @@ class MainActivity : Activity() {
         settingsScroll.visibility = View.GONE
         pageContainer.addView(settingsScroll)
 
+        val diagnosticsScroll = buildDiagnosticsScreen()
+        diagnosticsScroll.visibility = View.GONE
+        pageContainer.addView(diagnosticsScroll)
+
         // FIXED BOTTOM NAVIGATION
         val navigation = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -462,17 +466,27 @@ class MainActivity : Activity() {
                             scroll.visibility = View.VISIBLE
                             audioScroll.visibility = View.GONE
                             settingsScroll.visibility = View.GONE
+                            diagnosticsScroll.visibility = View.GONE
                             updateTabSelection(0)
                         }
                         2 -> {
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.VISIBLE
                             settingsScroll.visibility = View.GONE
+                            diagnosticsScroll.visibility = View.GONE
                             updateTabSelection(2)
+                        }
+                        3 -> {
+                            scroll.visibility = View.GONE
+                            audioScroll.visibility = View.GONE
+                            settingsScroll.visibility = View.GONE
+                            diagnosticsScroll.visibility = View.VISIBLE
+                            updateTabSelection(3)
                         }
                         4 -> {
                             scroll.visibility = View.GONE
                             audioScroll.visibility = View.GONE
+                            diagnosticsScroll.visibility = View.GONE
                             settingsScroll.visibility = View.VISIBLE
                             updateTabSelection(4)
                         }
@@ -1235,6 +1249,103 @@ class MainActivity : Activity() {
             clipToPadding = false
             addView(page)
         }
+    }
+
+
+    private fun buildDiagnosticsScreen(): ScrollView {
+        val page = ScrollView(this)
+        page.setBackgroundColor(bg)
+
+        val content = LinearLayout(this)
+        content.orientation = LinearLayout.VERTICAL
+        content.setPadding(dp(20), dp(24), dp(20), dp(30))
+        page.addView(content)
+
+        content.addView(text("PODSOS / SYSTEM MONITOR", 12, glow, true))
+        content.addView(space(10))
+        content.addView(text("DIAGNOSTICS", 30, primaryText, true))
+        content.addView(space(6))
+        content.addView(text("Device health and telemetry", 14, muted))
+        content.addView(space(24))
+
+        val device = card()
+        device.addView(text("01 / CONNECTED DEVICE", 12, glow, true))
+        device.addView(space(16))
+        device.addView(text("AirPods 4 ANC", 23, primaryText, true))
+        device.addView(space(6))
+        device.addView(text("Bluetooth connection monitor", 13, muted))
+        device.addView(space(14))
+        device.addView(text("MONITOR STATUS     ACTIVE", 12, glow, true))
+        content.addView(device)
+        content.addView(space(18))
+
+        content.addView(text("02 / BATTERY TELEMETRY", 12, glow, true))
+        content.addView(space(12))
+
+        val batteryRow = LinearLayout(this)
+        batteryRow.orientation = LinearLayout.HORIZONTAL
+
+        val batteryLabels = listOf("LEFT", "RIGHT", "CASE")
+        for (label in batteryLabels) {
+            val panel = card()
+            panel.orientation = LinearLayout.VERTICAL
+            panel.gravity = android.view.Gravity.CENTER
+            panel.addView(text(label, 11, muted, true))
+            panel.addView(space(10))
+            panel.addView(text("--%", 23, primaryText, true))
+            val params = LinearLayout.LayoutParams(0, dp(105), 1f)
+            params.marginEnd = dp(7)
+            batteryRow.addView(panel, params)
+        }
+        content.addView(batteryRow)
+        content.addView(space(8))
+        content.addView(text("Battery readings will appear when supported data is available.", 12, muted))
+        content.addView(space(20))
+
+        val bluetooth = card()
+        bluetooth.addView(text("03 / BLUETOOTH TELEMETRY", 12, glow, true))
+        bluetooth.addView(space(16))
+        bluetooth.addView(text("Connection monitoring", 16, primaryText, true))
+        bluetooth.addView(space(6))
+        bluetooth.addView(text("PodsOS monitors the Bluetooth audio connection. Check the Home screen for the current connection status.", 13, muted))
+        content.addView(bluetooth)
+        content.addView(space(20))
+
+        content.addView(text("04 / DIAGNOSTIC TEST CENTRE", 12, glow, true))
+        content.addView(space(12))
+
+        val tests = listOf(
+            "Battery inspection" to "COMING SOON",
+            "Bluetooth connection test" to "COMING SOON",
+            "Device information" to "COMING SOON"
+        )
+        for ((name, status) in tests) {
+            val item = card()
+            val line = LinearLayout(this)
+            line.orientation = LinearLayout.HORIZONTAL
+            line.gravity = android.view.Gravity.CENTER_VERTICAL
+            val title = text(name, 14, primaryText, true)
+            line.addView(title, LinearLayout.LayoutParams(0, dp(42), 1f))
+            line.addView(text(status, 10, glow, true))
+            item.addView(line)
+            content.addView(item)
+            content.addView(space(9))
+        }
+
+        val system = card()
+        system.addView(text("05 / SYSTEM INFORMATION", 12, glow, true))
+        system.addView(space(15))
+        system.addView(text("PodsOS", 19, primaryText, true))
+        system.addView(space(5))
+        system.addView(text("Version 1.2.0  •  Cyber Edition", 13, muted))
+        content.addView(system)
+        content.addView(space(24))
+
+        val footer = text("PODSOS  •  DIAGNOSTICS CENTRE", 11, muted, true)
+        footer.gravity = android.view.Gravity.CENTER
+        content.addView(footer)
+
+        return page
     }
 
     private fun dp(value: Int): Int {
