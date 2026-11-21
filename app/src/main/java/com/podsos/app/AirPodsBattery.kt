@@ -10,7 +10,10 @@ import android.bluetooth.le.ScanSettings
 data class AirPodsBatteryData(
     val left: Int? = null,
     val right: Int? = null,
-    val case: Int? = null
+    val case: Int? = null,
+    val leftCharging: Boolean? = null,
+    val rightCharging: Boolean? = null,
+    val caseCharging: Boolean? = null
 )
 
 class AirPodsBattery(
@@ -45,6 +48,7 @@ class AirPodsBattery(
 
             val manufacturer = record.manufacturerSpecificData
             val manufacturerInfo = StringBuilder()
+            var decodedBattery: AirPodsBatteryData? = null
             android.util.Log.d("PodsOS_BLE", "========== BLE PACKET ==========")
             android.util.Log.d("PodsOS_BLE", "Device: ${record.deviceName}")
             android.util.Log.d("PodsOS_BLE", "RSSI: ${result.rssi} dBm")
@@ -66,6 +70,11 @@ class AirPodsBattery(
                 manufacturerInfo.append(
                     "\nID: 0x%04X DATA: %s".format(id, hex)
                 )
+
+                // Run the user's AirPods decoder on Apple manufacturer data.
+                if (id == 0x004C) {
+                    decodedBattery = parseAirPodsPayload(bytes)
+                }
             }
 
             val serviceData = StringBuilder()
@@ -78,8 +87,17 @@ class AirPodsBattery(
                 serviceData.append("\n$uuid: $hex")
             }
 
+            decodedBattery?.let {
+                onBatteryUpdate(it)
+            }
+
             onStatusUpdate(
                 "BLE DEVICE DETECTED\n" +
+                (decodedBattery?.let {
+                    "AIRPODS BATTERY DECODED\n" +
+                    "Left: ${it.left}% | Right: ${it.right}% | Case: ${it.case}%\n" +
+                    "Charging: L=${it.leftCharging}, R=${it.rightCharging}, Case=${it.caseCharging}\n"
+                } ?: "") +
                 "Name: $name\n" +
                 "RSSI: ${result.rssi} dBm\n" +
                 "Manufacturer: ${manufacturerInfo.ifEmpty { "None" }}\n" +
@@ -92,6 +110,38 @@ class AirPodsBattery(
             scanning = false
             onStatusUpdate("BLE SCAN FAILED: $errorCode")
         }
+    }
+
+
+    // Kotlin translation of the user's original JavaScript decoder.
+    private fun parseAirPodsPayload(bytes: ByteArray): AirPodsBatteryData? {
+        if (bytes.size < 11 || (bytes[0].toInt() and 0xFF) != 0x07) {
+            return null
+        }
+
+        val status = bytes[3].toInt() and 0xFF
+        val podsBatteryByte = bytes[5].toInt() and 0xFF
+        val chargeAndCaseByte = bytes[6].toInt() and 0xFF
+
+        val isFlipped = (status and 0x02) != 0
+        val highNibble = (podsBatteryByte shr 4) and 0x0F
+        val lowNibble = podsBatteryByte and 0x0F
+
+        val rawRight = if (isFlipped) lowNibble else highNibble
+        val rawLeft = if (isFlipped) highNibble else lowNibble
+        val rawCase = chargeAndCaseByte and 0x0F
+
+        fun toPercent(value: Int): Int? =
+            if (value in 0..10) value * 10 else null
+
+        return AirPodsBatteryData(
+            left = toPercent(rawLeft),
+            right = toPercent(rawRight),
+            case = toPercent(rawCase),
+            leftCharging = (chargeAndCaseByte and 0x01) != 0,
+            rightCharging = (chargeAndCaseByte and 0x02) != 0,
+            caseCharging = (chargeAndCaseByte and 0x04) != 0
+        )
     }
 
     fun start() {
