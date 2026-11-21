@@ -24,3 +24,9 @@ android {
         jvmTarget = "17"
     }
 }
+
+
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
+}
