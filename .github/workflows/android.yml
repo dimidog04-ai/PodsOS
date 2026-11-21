@@ -1,4 +1,3 @@
-
 name: Build PodsOS APK
 
 on:
@@ -26,6 +25,9 @@ jobs:
         with:
           gradle-version: '8.13'
 
+      - name: Run unit tests
+        run: gradle testDebugUnitTest
+
       - name: Build APK
         run: gradle assembleDebug
 
@@ -34,4 +36,3 @@ jobs:
         with:
           name: PodsOS-debug-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-
